@@ -1,3 +1,16 @@
+##############################
+#
+#
+#
+#   Script to clean WhatsApp Chatlog Data
+#
+#
+#
+##############################
+
+
+
+
 library(tidyverse)
 library(WhatsR)
 

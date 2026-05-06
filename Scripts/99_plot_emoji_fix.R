@@ -45,7 +45,7 @@ library(methods)
 library(utils)
 
 # Visualizing sent emoji
-plot_emoji_debug <- function(data,
+plot_emoji <- function(data,
                        names = "all",
                        starttime = "1960-01-01 00:00",
                        endtime = "2200-01-01 00:00",
@@ -65,6 +65,8 @@ plot_emoji_debug <- function(data,
   
   # checking data
   if(!is.data.frame(data)){stop("'data' must be a dataframe parsed with parse_chat()")}
+  
+  
   
   # start- and endtime are convertable to POSIXct
   if (is.character(starttime) == FALSE | is.na(anytime(starttime, asUTC=TRUE,tz="UTC"))) stop("starttime has to be a character string in the form of 'yyyy-mm-dd hh:mm' that can be converted by anytime().")
@@ -91,14 +93,20 @@ plot_emoji_debug <- function(data,
   
   # importing Emoji dictionary
   Dictionary <- read.csv(system.file("EmojiDictionary.csv", package = "WhatsR"))
+  Dictionary$Desc <- tolower(Dictionary$Desc)
+  
+  ## if sender is anonymized, recognize that and use anon data.
+  
+  
   
   # dedpulicating dictionary
-  Dictionary <- Dictionary[Dictionary$status != "minimally-qualified" & Dictionary$status != "unqualified" ,]
+  #Dictionary <- Dictionary[Dictionary$status != "minimally-qualified" & Dictionary$status != "unqualified" ,]
   
   # absolutely ensure deduplication
-  Dictionary <- Dictionary[!duplicated(Dictionary$Desc),]
+ # Dictionary <- Dictionary[!duplicated(Dictionary$Desc),]
   
   # setting starttime
+  
   if (as.POSIXct(starttime,tz="UTC") <= min(data$DateTime)) {
     starttime <- min(data$DateTime)
   } else {
@@ -152,10 +160,10 @@ plot_emoji_debug <- function(data,
   
   # Emoji
   UnlistedEmojiDescriptions <- unlist(data$EmojiDescriptions)
-  print(paste0("UnlistedEmojiDescriptions: ", UnlistedEmojiDescriptions))
+  #print(paste0("UnlistedEmojiDescriptions: ", UnlistedEmojiDescriptions))
   
   NewEmoji <- UnlistedEmojiDescriptions[!is.na(UnlistedEmojiDescriptions)]
-  print(paste0("NewEmoji: ", NewEmoji))
+  #print(paste0("NewEmoji: ", NewEmoji))
   
   
   # Senders
@@ -195,7 +203,7 @@ plot_emoji_debug <- function(data,
     emoji_vec <- unique(NewEmoji)
     
   }
-  print(paste0("emoji_vec: ", emoji_vec))
+  #print(paste0("emoji_vec: ", emoji_vec))
   # restricting to emoji_vec range
   NewFrame <- NewFrame[is.element(NewFrame$NewEmoji,emoji_vec),]
   
@@ -345,16 +353,22 @@ plot_emoji_debug <- function(data,
     indicator <- NULL
     
     for (i in df$Emoji) {
-      
+      i <- i %>% tolower()
       indicator[i] <- which(Dictionary$Desc == gsub("Emoji_","",i))
       
     }
     
     # retranslating emoji to description
-    df$Glyph <- sapply(gsub("Emoji_","",df$Emoji), function(x){Dictionary[x == Dictionary$Desc,]$R.native})
+    clean <- tolower(gsub("Emoji_", "", df$Emoji))
+    
+    idx <- match(clean, Dictionary$Desc)
+    
+    df$Glyph <- Dictionary$R.native[idx]
     
     # Visualizig the distribution of emoji and putting the emoji on top of the bars
-    out <- ggplot(df,aes(x = factor(Emoji,levels = Emoji[order(Freq, decreasing = TRUE)]),y = Freq, fill = Emoji, label = Dictionary$HTML[indicator])) +
+    
+    
+    out <- ggplot(df,aes(x = factor(Emoji,levels = Emoji[order(Freq, decreasing = TRUE)]),y = Freq, fill = Emoji, label = Glyph)) +
       theme_minimal() +
       geom_bar(stat = "identity") +
       labs(title = "Distribution of sent Emoji",
@@ -435,8 +449,13 @@ plot_emoji_debug <- function(data,
   }
   
 }
-example <- readRDS("example_chat.rds")
-example <- example %>% mutate(DateTime = Timestamp)
-plot_emoji_debug(fix, min_occur = 15)
 
+example <- readRDS("Data/example_chat.rds")
+fix <- restore_chatlog_structure(example)
 
+plot_emoji(fix, min_occur = 15, plot = "bar")
+plot_emoji(fix, min_occur = 15, plot = "cumsum")
+plot_emoji(fix, min_occur = 15, plot = "heatmap")
+plot_emoji(fix, min_occur = 15, plot = "splitbar")
+
+plot_links(fix)
