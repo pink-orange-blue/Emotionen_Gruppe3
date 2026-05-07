@@ -9,64 +9,41 @@
 ##############################
 
 
+# Install packages if required!
 
+#install.packages("tidyverse")
+#install.packages("WhatsR")
 
 library(tidyverse)
 library(WhatsR)
 
-example_chat_01 <- readRDS("example_chat.rds")
-testuser <- readRDS("TestUser.rds")
-parsed_chat_example <- WhatsR::parse_chat("Simulated_WhatsR_chatlog.txt")
-
-pce <- parsed_chat_example
-
-ec1 <- example_chat_01
+source(file.path("Scripts", "00_Helpers.R"))
 
 
-ec1[6,6]#
+data_dir <- "Data"
+save_dir <- "Data_cleaned"
 
-step1 <- sapply(ec1$Emoji, is.na)
+exclude_files <- c("example_chat.rds")
 
-step2 <- !sapply(sapply(ec1$Emoji, is.na),sum)
-
-View(step1)
-
-View(step2)
+## read all .rds files under data
 
 
 
-step1ideal <- sapply(pce$Emoji, is.na)
-step2ideal <- !sapply(step1ideal, sum)
-
-View(step1ideal)
-View(step2ideal)
-
-good_links <- example_chat_01 %>% select(Links_anonymized) %>% filter(!is.na(Links_anonymized))
-
-plot_emoji(ec1)
+raw_files <- list.files(data_dir, pattern="\\.rds$")
+#raw_files <- setdiff(raw_files, exclude_files)
 
 
-
-good_links
-
+dir.create(save_dir, showWarnings = FALSE, recursive = TRUE)
 
 
-str(example_chat_01)
+ ## save all cleaned files in new folder 
+for (file in raw_files) {
+  chat <- readRDS(file.path(data_dir, file))
+  chat <- chat %>% restore_chatlog_structure()
+  
+  saveRDS(chat, file = file.path(save_dir, file))
+  
+}
 
-WhatsR::plot_emoji(example_chat_01)
-
-ex <- WhatsR::create_chatlog()
 
 
-emojis <- WhatsR::download_emoji()
-emvec <- emojis$R.native
-WhatsR::plot_emoji(example_chat_01, emoji_vec = "all")
-
-WhatsR::plot_smilies(example_chat_01)
-
-WhatsR::plot_links(example_chat_02)
-
-str(example_chat_01)
-str(parsed_chat_example)
-
-example_chat_02 <- example_chat_01 %>% mutate(URL_anon = Links_anonymized)

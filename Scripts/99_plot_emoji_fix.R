@@ -375,12 +375,11 @@ plot_emoji <- function(data,
            subtitle = paste(starttime, " - ", endtime),
            x = "Emojis",
            y = "Frequency") +
-      theme(axis.text.x = element_text(angle = 90, hjust = 0.95, vjust = 0.2), legend.position = "none") +
-      geom_label(aes(label = Glyph),
-                 family = font_family,
-                 linewidth = NA,
-                 fill = alpha(c("white"),0),
-                 size = emoji_size)
+      theme(axis.text.x = element_text(angle = 90, hjust = 0.95, vjust = 0.2), legend.position = "none") #+
+      # geom_label(aes(label = Glyph),
+      #            family = font_family,
+      #            fill = alpha(c("white"),0),
+      #            size = emoji_size)
     
     # printing
     print(out)
@@ -426,13 +425,7 @@ plot_emoji <- function(data,
            subtitle = paste(starttime, " - ", endtime),
            x = "Sender",
            y = "Frequency") +
-      theme(legend.title = element_text("Emoji")) +
-      geom_label(aes(label = Glyph, fill = Emoji),
-                 family = font_family,
-                 linewidth = NA,
-                 fill = alpha(c("white"),0),
-                 size = emoji_size,
-                 position = position_dodge2(width = 0.9, preserve = "single"))
+      theme(legend.title = element_text("Emoji")) 
     
     
     #switching warnings back on
@@ -450,12 +443,12 @@ plot_emoji <- function(data,
   
 }
 
-example <- readRDS("Data/example_chat.rds")
-fix <- restore_chatlog_structure(example)
-
-plot_emoji(fix, min_occur = 15, plot = "bar")
-plot_emoji(fix, min_occur = 15, plot = "cumsum")
-plot_emoji(fix, min_occur = 15, plot = "heatmap")
-plot_emoji(fix, min_occur = 15, plot = "splitbar")
-
-plot_links(fix)
+# example <- readRDS("Data/example_chat.rds")
+# fix <- restore_chatlog_structure(example)
+# 
+# plot_emoji(fix, min_occur = 15, plot = "bar")
+# plot_emoji(fix, min_occur = 15, plot = "cumsum")
+# plot_emoji(fix, min_occur = 15, plot = "heatmap")
+# plot_emoji(fix, min_occur = 15, plot = "splitbar")
+# 
+# plot_links(fix)

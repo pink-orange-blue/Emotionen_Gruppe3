@@ -1,9 +1,9 @@
-#install.packages("tidyverse")
-#install.packages("WhatsR")
+
 
 library(tidyverse)
 library(WhatsR)
 
+source(file.path("Scripts", "99_plot_emoji_fix.R"))
 
 restore_chatlog_structure <- function(chatlog) {
   
@@ -36,65 +36,73 @@ restore_chatlog_structure <- function(chatlog) {
   return(fixed_chatlog)
 }
 
-example <- readRDS("Data/example_chat.rds")
 
-proper_format <- WhatsR::parse_chat("Data/Simulated_WhatsR_chatlog.txt")
-
-
-
-fix <- example %>% restore_chatlog_structure()
-
-example_short <- head(example)
-proper_short <- head(proper_format)
-fix_short <- head(fix)
-
-num_identical <- 0
-num_total <- 0
-non_identical <- c()
-
-
-for(name in names(proper_short)) {
+compare_chatlogs_to_template<- function(chatlog) {
   
-  num_total <- num_total + 1
+  proper_format <- WhatsR::parse_chat("Data/Simulated_WhatsR_chatlog.txt")
   
-  cat("Current column is ", name, "\n")
-  cat("Proper format: \n")
-  cat(str(proper_short[name]))
-  cat("Actual format:\n")
-  cat(str(fix_short[name]))
+  example_short <- head(example)
+  proper_short <- head(proper_format)
+  fix_short <- head(chatlog)
   
-  cat("class of proper_short[[", name,"]] = ", class(proper_short[[name]]), "\n")
-  cat("class of fix_short[[", name,"]] = ", class(fix_short[[name]]), "\n")
+  num_identical <- 0
+  num_total <- 0
+  non_identical <- c()
   
-  is_identical_format <- class(proper_short[[name]]) == class(fix_short[[name]])
-  cat("is_identical_format = ", is_identical_format)
-  if(all(is_identical_format == TRUE)) {
-    num_identical <- num_identical + 1
+  
+  for(name in names(proper_short)) {
     
-  } else {
-    non_identical <- c(non_identical, name)
+    num_total <- num_total + 1
+    
+    cat("Current column is ", name, "\n")
+    cat("Proper format: \n")
+    cat(str(proper_short[name]))
+    cat("Actual format:\n")
+    cat(str(fix_short[name]))
+    
+    cat("class of proper_short[[", name,"]] = ", class(proper_short[[name]]), "\n")
+    cat("class of fix_short[[", name,"]] = ", class(fix_short[[name]]), "\n")
+    
+    is_identical_format <- class(proper_short[[name]]) == class(fix_short[[name]])
+    cat("is_identical_format = ", is_identical_format, "\n")
+    if(all(is_identical_format == TRUE)) {
+      num_identical <- num_identical + 1
+      
+    } else {
+      non_identical <- c(non_identical, name)
+    }
+    cat(".... are they equal? -- ", is_identical_format,"\n")
+    cat("\n#########")
+    cat("\n-------------------------------------------------------------------------------------------\n")
+    
+    
+    
   }
-  cat(".... are they equal? -- ", is_identical_format)
-  cat("\n#########")
-  cat("\n-------------------------------------------------------------------------------------------\n")
   
+  cat("Total entries: ", num_total)
+  cat("\nIdentical entries: ", num_identical)
+  cat("\nList of non-identical cols:") 
+  print(non_identical)
   
   
 }
 
-cat("Total entries: ", num_total)
-cat("Identical entries: ", num_identical)
-cat("List of non-identical cols:") 
-print(non_identical)
-
-
-#WhatsR::plot_emoji(fix)
-
-#WhatsR::plot_emoji(proper_format)
-
-
-fix2 <- fix %>% mutate(Sender = Sender_anon)
-
-plot_emoji(fix2,
-           plot = "bar",
-           min_occur = 15)
+# 
+# example <- readRDS("Data/example_chat.rds")
+# 
+# 
+# 
+# fix <- example %>% restore_chatlog_structure()
+# 
+# compare_chatlogs_to_template(fix)
+# 
+# 
+# #WhatsR::plot_emoji(fix)
+# 
+# #WhatsR::plot_emoji(proper_format)
+# 
+# 
+# plot_emoji(fix,
+#            plot = "bar",
+#            min_occur = 15,
+#            font_family = "sans")
