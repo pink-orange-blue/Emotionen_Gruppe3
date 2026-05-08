@@ -241,220 +241,234 @@ ggplot(links_per_week, aes(x = week, y = n)) +
 ## EMOJI X TIME rolling average
 
 
-chatlog <- example_chat
-num_emoji <- 5
-plotname <- "example_chat_emoji_x_time"
-
-
-# Unnest emoji column
-emoji_time <- chatlog %>%
-  select(DateTime, Emoji) %>%
-  unnest_longer(Emoji) %>%
-  filter(!is.na(Emoji))
-
-# Find top 10 emojis overall
-top_emojis <- emoji_time %>%
-  count(Emoji, sort = TRUE) %>%
-  slice_head(n = num_emoji) %>%
-  pull(Emoji)
-
-# Count emoji usage per month
-emoji_monthly <- emoji_time %>%
+plot_emoji_x_time <- function(chatlog, num_emoji = 5, plotname = "placeholder", start_date = as.POSIXct("2010-01-01")) {
+  chatlog <- chatlog %>%
+    filter(DateTime >= start_date)
   
-  # Keep only top emojis
-  filter(Emoji %in% top_emojis) %>%
   
-  # Convert timestamps to months
-  mutate(month = floor_date(DateTime, "month")) %>%
   
-  # Count uses per emoji per month
-  count(month, Emoji)
-
-# Compute rolling 3-month average
-emoji_rolling <- emoji_monthly %>%
+  # Unnest emoji column
+  emoji_time <- chatlog %>%
+    select(DateTime, Emoji) %>%
+    unnest_longer(Emoji) %>%
+    filter(!is.na(Emoji))
   
-  arrange(Emoji, month) %>%
+  # Find top 10 emojis overall
+  top_emojis <- emoji_time %>%
+    count(Emoji, sort = TRUE) %>%
+    slice_head(n = num_emoji) %>%
+    pull(Emoji)
   
-  group_by(Emoji) %>%
+  # Count emoji usage per month
+  emoji_monthly <- emoji_time %>%
+    
+    # Keep only top emojis
+    filter(Emoji %in% top_emojis) %>%
+    
+    # Convert timestamps to months
+    mutate(month = floor_date(DateTime, "month")) %>%
+    
+    # Count uses per emoji per month
+    count(month, Emoji)
   
-  mutate(
-    rolling_avg = slide_dbl(
-      n,
-      mean,
-      .before = 2,
-      .complete = FALSE
+  # Compute rolling 3-month average
+  emoji_rolling <- emoji_monthly %>%
+    
+    arrange(Emoji, month) %>%
+    
+    group_by(Emoji) %>%
+    
+    mutate(
+      rolling_avg = slide_dbl(
+        n,
+        mean,
+        .before = 2,
+        .complete = FALSE
+      )
     )
-  )
-
-# Plot rolling averages
-agg_png(
-  file.path(plot_dir, paste0(plotname, ".png")),
-  width = 2000,
-  height = 1400,
-  res = 144
-)
-
-
-ggplot(
-  emoji_rolling,
-  aes(
-    x = month,
-    y = rolling_avg,
-    color = Emoji
-  )
-) +
   
-  # Draw lines
-  geom_line(linewidth = 1.2) +
+  # Plot rolling averages
+  agg_png(
+    file.path(plot_dir, paste0(plotname, ".png")),
+    width = 2000,
+    height = 1400,
+    res = 144
+  )
   
-  # Labels
-  labs(
-    title = "Emoji Usage Over Time",
-    subtitle = "3-Month Rolling Average",
-    x = "Time",
-    y = "Average Uses per Month",
-    color = "Emoji"
+  
+  ggplot(
+    emoji_rolling,
+    aes(
+      x = month,
+      y = rolling_avg,
+      color = Emoji
+    )
   ) +
-  
-  # Minimal theme
-  theme_minimal(base_size = 14) +
-  
-  # Larger emoji legend
-  theme(
-    legend.text = element_text(size = 16),
-    legend.title = element_text(size = 14)
+    
+    # Draw lines
+    geom_line(linewidth = 1.2) +
+    
+    # Labels
+    labs(
+      title = "Emoji Usage Over Time",
+      subtitle = "3-Month Rolling Average",
+      x = "Time",
+      y = "Average Uses per Month",
+      color = "Emoji"
+    ) +
+    
+    # Minimal theme
+    theme_minimal(base_size = 14) +
+    
+    # Larger emoji legend
+    theme(
+      legend.text = element_text(size = 16),
+      legend.title = element_text(size = 14)
+    )
+  ggsave(
+    file.path(plot_dir, paste0(plotname, ".png")),
+    device = ragg::agg_png,
+    width = 2000,
+    height = 1400,
+    dpi = 144,
+    units = "px",
+    bg = "white"
   )
+  
+}
 
-dev.off()
+plot_emoji_x_time(example_chat, 5, "emoji_x_time_plot", as.POSIXct("2020-01-01"))
+
 
 
 ##################################
 
 
-### relative ranking plot
 
-chatlog <- t_chat
-num_emoji <- 5
-plotname <- "example_chat_relative"
-start_date <- as.POSIXct("2023-01-01")
-chatlog <- chatlog %>%
-  filter(DateTime >= start_date)
 
-# ----------------------------
-# Prepare emoji time data
-# ----------------------------
 
-# Convert list-column into one row per emoji
-emoji_time <- chatlog %>%
-  select(DateTime, Emoji) %>%
-  unnest_longer(Emoji) %>%
-  filter(!is.na(Emoji))
+### lets write it as a function so that we can easily re-use it!
 
-# Find most frequently used emojis overall
-top_emojis <- emoji_time %>%
-  count(Emoji, sort = TRUE) %>%
-  slice_head(n = num_emoji) %>%
-  pull(Emoji)
-
-# ----------------------------
-# Count ALL emoji usage per month
-# ----------------------------
-
-all_emoji_per_month <- emoji_time %>%
-  mutate(month = floor_date(DateTime, "month")) %>%
-  count(month, name = "total_emoji")
-
-# ----------------------------
-# Count top emoji usage per month
-# and normalize by ALL emoji activity
-# ----------------------------
-
-emoji_monthly <- emoji_time %>%
+plot_relative_emoji <- function(chatlog, num_emoji = 5, plotname = "placeholder", start_date = as.POSIXct("2010-01-01")) {
   
-  # Keep only top emojis
-  filter(Emoji %in% top_emojis) %>%
-  
-  # Convert timestamps to months
-  mutate(month = floor_date(DateTime, "month")) %>%
-  
-  # Count emoji usage
-  count(month, Emoji, name = "emoji_count") %>%
-  
-  # Join total emoji activity
-  left_join(all_emoji_per_month, by = "month") %>%
-  
-  # Relative share of all emojis
-  mutate(
-    emoji_share = emoji_count / total_emoji
-  )
 
-# ----------------------------
-# Compute rolling average
-# ----------------------------
-
-emoji_rolling <- emoji_monthly %>%
+  chatlog <- chatlog %>%
+    filter(DateTime >= start_date)
   
-  arrange(Emoji, month) %>%
+  # ----------------------------
+  # Prepare emoji time data
+  # ----------------------------
   
-  group_by(Emoji) %>%
+  # Convert list-column into one row per emoji
+  emoji_time <- chatlog %>%
+    select(DateTime, Emoji) %>%
+    unnest_longer(Emoji) %>%
+    filter(!is.na(Emoji))
   
-  mutate(
-    rolling_avg = slide_dbl(
-      emoji_share,
-      mean,
-      .before = 2,
-      .complete = FALSE
+  # Find most frequently used emojis overall
+  top_emojis <- emoji_time %>%
+    count(Emoji, sort = TRUE) %>%
+    slice_head(n = num_emoji) %>%
+    pull(Emoji)
+  
+  # ----------------------------
+  # Count ALL emoji usage per month
+  # ----------------------------
+  
+  all_emoji_per_month <- emoji_time %>%
+    mutate(month = floor_date(DateTime, "month")) %>%
+    count(month, name = "total_emoji")
+  
+  # ----------------------------
+  # Count top emoji usage per month
+  # and normalize by ALL emoji activity
+  # ----------------------------
+  
+  emoji_monthly <- emoji_time %>%
+    
+    # Keep only top emojis
+    filter(Emoji %in% top_emojis) %>%
+    
+    # Convert timestamps to months
+    mutate(month = floor_date(DateTime, "month")) %>%
+    
+    # Count emoji usage
+    count(month, Emoji, name = "emoji_count") %>%
+    
+    # Join total emoji activity
+    left_join(all_emoji_per_month, by = "month") %>%
+    
+    # Relative share of all emojis
+    mutate(
+      emoji_share = emoji_count / total_emoji
     )
-  )
-
-# ----------------------------
-# Save plot
-# ----------------------------
-
-agg_png(
-  file.path(plot_dir, paste0(plotname, ".png")),
-  width = 2000,
-  height = 1400,
-  res = 144,
-  background = "white"
-)
-
-# ----------------------------
-# Plot
-# ----------------------------
-
-ggplot(
-  emoji_rolling,
-  aes(
-    x = month,
-    y = rolling_avg,
-    color = Emoji
-  )
-) +
   
-  # Draw lines
-  geom_line(linewidth = 1.4) +
+  # ----------------------------
+  # Compute rolling average
+  # ----------------------------
   
-  # Labels
-  labs(
-    title = "Relative Emoji Popularity Over Time",
-    subtitle = "3-Month Rolling Average",
-    x = "Time",
-    y = "Share of All Emoji Usage",
-    color = "Emoji"
+  emoji_rolling <- emoji_monthly %>%
+    
+    arrange(Emoji, month) %>%
+    
+    group_by(Emoji) %>%
+    
+    mutate(
+      rolling_avg = slide_dbl(
+        emoji_share,
+        mean,
+        .before = 2,
+        .complete = FALSE
+      )
+    )
+  
+
+  # ----------------------------
+  # Plot
+  # ----------------------------
+  
+  ggplot(
+    emoji_rolling,
+    aes(
+      x = month,
+      y = rolling_avg,
+      color = Emoji
+    )
   ) +
+    
+    # Draw lines
+    geom_line(linewidth = 1.4) +
+    
+    # Labels
+    labs(
+      title = "Relative Emoji Popularity Over Time",
+      subtitle = "3-Month Rolling Average",
+      x = "Time",
+      y = "Share of All Emoji Usage",
+      color = "Emoji"
+    ) +
+    
+    # Clean theme
+    theme_minimal(base_size = 16) +
+    
+    # White background + larger legend text
+    theme(
+      plot.background = element_rect(fill = "white", color = NA),
+      panel.background = element_rect(fill = "white", color = NA),
+      legend.text = element_text(size = 18),
+      legend.title = element_text(size = 16)
+    )
   
-  # Clean theme
-  theme_minimal(base_size = 16) +
-  
-  # White background + larger legend text
-  theme(
-    plot.background = element_rect(fill = "white", color = NA),
-    panel.background = element_rect(fill = "white", color = NA),
-    legend.text = element_text(size = 18),
-    legend.title = element_text(size = 16)
+  ggsave(
+    file.path(plot_dir, paste0(plotname, ".png")),
+    device = ragg::agg_png,
+    width = 2000,
+    height = 1400,
+    dpi = 144,
+    units = "px",
+    bg = "white"
   )
+  
+}
 
-# Finish file
-dev.off()
-
+plot_relative_emoji(example_chat, 5, "rel_emoji", as.POSIXct("2020-01-01"))
