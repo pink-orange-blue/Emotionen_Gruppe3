@@ -477,3 +477,4 @@ plot_relative_emoji <- function(chatlog, num_emoji = 5, plotname = "placeholder"
 }
 
 plot_relative_emoji(example_chat, 5, "rel_emoji", as.POSIXct("2020-01-01"))
+#
