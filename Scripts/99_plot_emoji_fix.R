@@ -376,11 +376,13 @@ plot_emoji <- function(data,
            x = "Emojis",
            y = "Frequency") +
       theme(axis.text.x = element_text(angle = 90, hjust = 0.95, vjust = 0.2), legend.position = "none") #+
-      # geom_label(aes(label = Glyph),
-      #            family = font_family,
-      #            fill = alpha(c("white"),0),
-      #            size = emoji_size)
-    
+    #    geom_label(aes(label = Glyph),
+    #               family = font_family,
+    #               fill = alpha(c("white"),0),
+    #               size = emoji_size)
+    # 
+    # ggsave("emojitest.png", device = ragg::agg_png)
+
     # printing
     print(out)
     
@@ -405,7 +407,7 @@ plot_emoji <- function(data,
     
     # Adding HTML to SumFrame
     indicator <- NULL
-    print(SumFrame)
+    #print(SumFrame)
     
     for (i in seq_along(SumFrame$Emoji)) {
       

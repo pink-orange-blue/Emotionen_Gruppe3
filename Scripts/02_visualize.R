@@ -18,13 +18,13 @@ library(ragg)
 library(tidyverse)
 library(WhatsR)
 
-source(file.path("Scripts", "00_Helpers.R"))
+source(file.path("Scripts", "00_Helpers.R")) ## lets again load our helpers, we might need them!
 
 save_dir <- "Data_cleaned"
 plot_dir <- "Plots"
 dir.create(plot_dir, showWarnings = FALSE, recursive = TRUE)
 
-simulated_chat <- WhatsR::parse_chat(file.path("Data", "Simulated_WhatsR_chatlog.txt"))
+simulated_chat <- WhatsR::parse_chat(file.path("Data", "Simulated_WhatsR_chatlog.txt")) ## lets load a simulated chat example.
 
 
 ## load all cleaned chats
@@ -36,7 +36,7 @@ for (file in files) {
   chat <- readRDS(file.path(save_dir, file))
   name <- tools::file_path_sans_ext(file)
   
-  chatlogs[[name]] <- chat
+  chatlogs[[name]] <- chat ## now we have a list of all our chatlogs!
 }
 
 #View(chatlogs)
@@ -54,10 +54,12 @@ for (file in files) {
 
 example_chat <- chatlogs[["example_chat"]]
 
-## to plot emojis, I implemented my own fix since the package has some issues with emoji rendering. Do NOT use WhatsR::plot_emoji, use the function in the repo instead. By default, it is already masked
-## whatsR supports several plot types, we will iterate through them because lazy code is good code
+## to plot emojis, I implemented my own fix since the package has some issues with emoji rendering. 
+## Do NOT use WhatsR::plot_emoji, use the function in the repo instead. By default, it is already masked.
+## Just run "plot_emoji", but not WhatsR::plot_emoji
+## The function supports several plot types, we will iterate through them because lazy code is good code
 
-plot_types <- c("heatmap", "cumsum", "bar", "splitbar")
+plot_types <- c("heatmap", "cumsum", "bar", "splitbar") # always check the documentation! Press F1 while the cursor is within a function name to open it! or write ?function in the CLI.
 
 for(plot_type in plot_types) {
   
@@ -68,7 +70,10 @@ for(plot_type in plot_types) {
   
   ## whatsR uses ggplot2's system, therefore we can save the output the usual way
   print(myplot)
-  ggsave(file.path(plot_dir, paste0("emoji_plot_",plot_type,".png")))
+  ggsave(file.path(plot_dir, paste0("emoji_plot_",plot_type,".png")),
+         device = ragg::agg_png,
+         bg = "white"
+         ) ## we use agg rendering because emoji can be tricky.
   
 }
 
@@ -79,7 +84,7 @@ for(plot_type in plot_types) {
 
 WhatsR::plot_links(example_chat)
 
-WhatsR::plot_tokens(simulated_chat, exclude_sm = TRUE)
+WhatsR::plot_tokens(simulated_chat, exclude_sm = TRUE) ## we can only plot tokens for the simulated chat since our exports do not contain the whole text.
 
 
 ##### now we will look into creating our own visualizations!
